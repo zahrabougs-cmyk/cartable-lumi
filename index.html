@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cartable Lumi</title>
+<meta name="description" content="Apprendre le programme de 1ère année collège avec des vidéos parlées, des chansons, des jeux 3D et un prof IA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lexend:wght@400;500;700&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FF8A5B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lumi">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<script>window.IS_APP=true</script>
+<!-- Three.js : copie locale (npm install) sinon CDN -->
+<script src="vendor/three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"><\/script>')</script>
+</head>
+<body>
+<header class="top"><div class="top-in">
+ <a class="brand" href="#accueil"><i>L</i>Cartable Lumi</a><span class="sp"></span>
+ <a class="pill-btn games-btn" href="#jeux" aria-label="Espace jeux">🎮 <span class="lbl">Jeux</span></a>
+ <a class="pill-btn star-chip" id="starb" href="#album" aria-label="Mes étoiles et mon album">⭐ <span>0</span></a>
+ <button class="pill-btn" id="pomo" hidden></button>
+ <button class="pill-btn" id="stopb" aria-label="Arrêter la voix">■ <span class="lbl">Silence</span></button>
+ <button class="pill-btn" id="setb" aria-pressed="false">Aa <span class="lbl">Réglages</span></button>
+</div></header>
+<main id="main"></main>
+<button class="fab" id="aib">💬 <span class="lbl">Prof Lumi</span></button>
+<div class="veil" id="veil" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Réglages"></aside>
+<aside class="ai" id="ai" hidden aria-label="Prof Lumi"></aside>
+<div class="brk" id="brk" hidden role="dialog" aria-label="Pause"></div>
+<div class="ruler" id="ruler" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="assets/emoji-ok.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/emoji-list.js"></script>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/lecons.js"></script>
+<script src="js/lecons-maths.js"></script>
+<script src="js/lecons-physique.js"></script>
+<script src="js/lecons-svt-info.js"></script>
+<script src="js/lecons-manuel.js"></script>
+<script src="js/lecons-arabe.js"></script>
+<script src="js/lecons-hg-islam.js"></script>
+<script src="js/mots-en.js"></script>
+<script src="js/compte.js"></script>
+<script src="js/app.js"></script>
+<script src="assets/audio/index.js"></script>
+<script src="js/voix.js"></script>
+<script src="js/devoir.js"></script>
+<script src="js/lumi.js"></script>
+<script src="js/fle.js"></script>
+<script src="js/music.js"></script>
+<script src="js/world3d.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/hidden.js"></script>
+<script src="js/mots.js"></script>
+<script src="js/aventure.js"></script>
+<script src="js/generateur.js"></script>
+<script src="js/hub.js"></script>
+<script src="js/offline.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

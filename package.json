@@ -1,0 +1,18 @@
+{
+  "name": "cartable-lumi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site éducatif adapté (dyslexie, TDAH) pour la 1ère année collège : vidéos parlées, chansons rythmées, jeux 3D, français débutant et prof IA (Ollama).",
+  "scripts": {
+    "start": "npx --yes serve -l 5173 .",
+    "dev": "npx --yes live-server --port=5173 --no-browser",
+    "postinstall": "node scripts/vendor.js",
+    "images": "node scripts/download-emoji.js",
+    "voix": "node scripts/export-texts.js && python scripts/make_voices.py --all",
+    "voix:tout": "node scripts/export-texts.js && python scripts/make_voices.py --all"
+  },
+  "devDependencies": {
+    "three": "0.149.0"
+  },
+  "license": "MIT"
+}

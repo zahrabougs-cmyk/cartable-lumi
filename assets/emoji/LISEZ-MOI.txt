@@ -1,0 +1,1 @@
+Lance « npm run images » pour copier ici les images 3D et jouer sans internet.
