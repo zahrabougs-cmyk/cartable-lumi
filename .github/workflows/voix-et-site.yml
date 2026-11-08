@@ -40,10 +40,14 @@ jobs:
           sudo apt-get install -y ffmpeg >/dev/null || true
           npm install --no-audit --no-fund || true
       - name: Fabriquer les voix (seulement les nouvelles phrases)
+        env: { PYTHONUNBUFFERED: "1" }
         run: |
           node scripts/export-texts.js
+          python -c "import asyncio,edge_tts;asyncio.run(edge_tts.Communicate('Bonjour Ghita','fr-FR-EloiseNeural').save('/tmp/t.mp3'))"
+          ls -la /tmp/t.mp3
           python scripts/make_voices.py --all --jobs 6 || python scripts/make_voices.py --all --jobs 3
-      - name: Enregistrer dans le dépôt
+      - name: Enregistrer dans le dépôt (même si la fabrication s'arrête avant la fin)
+        if: always()
         run: |
           git config user.name "lumi-voix"
           git config user.email "lumi-voix@users.noreply.github.com"
