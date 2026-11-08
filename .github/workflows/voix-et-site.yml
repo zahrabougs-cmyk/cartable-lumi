@@ -1,0 +1,58 @@
+# Cartable Lumi : déballe le zip (si besoin), fabrique les voix (arabe, français, anglais) et publie le site.
+name: Voix et site
+on:
+  push:
+    branches: [main, master]
+    paths-ignore: ["assets/audio/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency: { group: voix, cancel-in-progress: false }
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Déballer le zip envoyé sur GitHub
+        run: |
+          Z=$(ls *.zip 2>/dev/null | head -1 || true)
+          if [ -n "$Z" ]; then
+            mkdir -p /tmp/z && unzip -q "$Z" -d /tmp/z
+            SRC=/tmp/z; [ -d /tmp/z/cartable-lumi ] && SRC=/tmp/z/cartable-lumi
+            shopt -s dotglob
+            cp -rn "$SRC"/* . || true
+            rm -f "$Z"
+            echo "Zip déballé : $Z"
+          fi
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Outils
+        run: |
+          pip install edge-tts
+          sudo apt-get install -y ffmpeg >/dev/null || true
+          npm install --no-audit --no-fund || true
+      - name: Fabriquer les voix (seulement les nouvelles phrases)
+        run: |
+          node scripts/export-texts.js
+          python scripts/make_voices.py --all --jobs 6 || python scripts/make_voices.py --all --jobs 3
+      - name: Enregistrer dans le dépôt
+        run: |
+          git config user.name "lumi-voix"
+          git config user.email "lumi-voix@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -q -m "Lumi : fichiers du projet et voix" && git push)
+      - name: Nettoyer avant publication
+        run: rm -rf node_modules
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: "." }
+      - id: deploy
+        uses: actions/deploy-pages@v4
