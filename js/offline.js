@@ -17,6 +17,5 @@ async function downloadAll(){const st=$("#offst"),bar=$("#offbar"),btn=$("#offb"
   const photos=new Set();Object.values(LESSONS).forEach(L=>(L.video||[]).forEach(v=>(v.img||[]).forEach(im=>photos.add(im.f))));
   Object.entries(window.AUDIO_INDEX||{}).forEach(([l,v])=>(Array.isArray(v)?v:String(v).split(" ")).filter(Boolean).forEach(h=>jobs.push(()=>fetch(`assets/audio/${l}/${h}.mp3`).catch(()=>null))));
   photos.forEach(f=>jobs.push(()=>fetch("https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(f.replace(/ /g,"_"))+"?width=640",{mode:"no-cors"}).catch(()=>null)));
-  jobs.push(()=>fetch("https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js").catch(()=>null));
   let done=0;const total=jobs.length;const run=async()=>{while(jobs.length){const j=jobs.shift();await j();done++;bar.style.width=Math.round(100*done/total)+"%";st.textContent=`Téléchargement… ${done} / ${total}`}};
   await Promise.all([run(),run(),run(),run(),run()]);S.offline=1;save();btn.disabled=false;st.textContent="✅ Prêt ! Tu peux jouer sans internet (la voix du micro a quand même besoin d'internet sur Chrome).";chime()}

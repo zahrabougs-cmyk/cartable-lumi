@@ -34,7 +34,7 @@ function genView(id,n){const s=SUB(id),t=allLessons(s)[n];const rtl=isAr(t)?' di
   <div class="ctrl"><button class="play" id="genb" style="--c:${s.c}">✨ Préparer la leçon avec le prof IA</button></div>
   <p class="noteline" id="genst">Il faut Ollama sur l'ordinateur (Réglages → Prof IA). Ça prend une ou deux minutes. Une leçon préparée par l'IA doit être relue par un adulte.</p></div>`}
 async function genLesson(id,n){const s=SUB(id),title=allLessons(s)[n],key=id+"-"+n,st=$("#genst"),b=$("#genb");
-  if(!aiReady)await aiInit();if(!aiReady){st.textContent="Je ne trouve pas Ollama. Lance Ollama avec OLLAMA_ORIGINS=* puis va dans Réglages → Prof IA → Tester.";return}
+  if(!aiReady)await aiInit();if(!aiReady){st.textContent="Je ne trouve pas Ollama. Lance Ollama (voir le guide : OLLAMA_ORIGINS) puis va dans Réglages → Prof IA → Tester.";return}
   b.disabled=true;b.textContent="⏳ Lumi prépare la leçon…";
   const ar=s.lang==="ar",langTxt=ar?"arabe (les textes say, ess, q sont en arabe ; laisse sayAr, essAr, qAr vides ; dans words la traduction est en français)":s.lang==="en"?"anglais (say en anglais simple ; ess en français)":"français";
   const prompt=`Tu prépares une leçon pour une élève de 1ère année collège au Maroc qui lit difficilement.

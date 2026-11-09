@@ -9,4 +9,6 @@ function emoSrc(e){return emoCands(e)[0]}
 function emoErr(img){const c=emoCands(img.dataset.e);const n=(+img.dataset.n||0)+1;if(n<c.length){img.dataset.n=n;img.src=c[n];return}
   const s=document.createElement("span");s.className=(img.className||"").replace("emoimg","emotxt");s.textContent=img.dataset.e||"";img.replaceWith(s)}
 function emo(e,cls="",alt=""){if(!e)return "";if(e==="👧🏽"&&/girl/.test(cls)&&typeof lumiSVG==="function")return lumiSVG(cls);if(!/\p{Extended_Pictographic}/u.test(e))return `<span class="emotxt ${cls}">${esc(e)}</span>`;
-  return `<img class="emoimg ${cls}" src="${emoSrc(e)}" alt="${esc(alt)}" data-e="${esc(e)}" draggable="false" onerror="emoErr(this)">`}
+  return `<img class="emoimg ${cls}" src="${emoSrc(e)}" alt="${esc(alt)}" data-e="${esc(e)}" draggable="false">`}
+// images qui ne chargent pas : écouté ici, car la politique de sécurité (CSP) interdit onerror="…" dans le HTML
+document.addEventListener("error",ev=>{const t=ev.target;if(!t||t.tagName!=="IMG")return;if(t.dataset.e!==undefined)emoErr(t);else{const f=t.closest("figure.ph");if(f)f.classList.add("noimg")}},true);

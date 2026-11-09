@@ -186,7 +186,7 @@ function resize(q,n,pool=[]){if(!q.ch||q.kind==="vf"||q.vf)return q;pool=[...(q.
 // o = {ui, lat, top, mode:"game"|"exam", hint, onNext(justeDuPremierCoup)}
 function questionView(P,s,q,o){window.__q=q;const A=o.ui==="ar",rtl=A?' dir="rtl"':"",tr=(a,f)=>A?a:f,exam=o.mode==="exam";let first=true,locked=false;
   const seqDir=q.seq&&isAr(q.seq.join(""))?"rtl":"ltr";
-  P.innerHTML=o.top+`<div${rtl}><div class="q"><span class="tx sent" id="gq">${esc(q.q)}${q.fr?`<small class="qfr" dir="auto">${esc(q.fr)}</small>`:""}</span></div>
+  P.innerHTML=o.top+`<div class="${exam?"":"qstage"}"${rtl}><div class="q"><span class="tx sent" id="gq">${esc(q.q)}${q.fr?`<small class="qfr" dir="auto">${esc(q.fr)}</small>`:""}</span></div>
    ${q.m?`<div class="gm sent" id="gm" dir="ltr">${esc(q.m)}</div>`:""}
    ${q.seq?`<div class="gseq" dir="${seqDir}">${q.seq.map((x,i)=>(i?`<span class="ar2">${seqDir==="rtl"?"←":"→"}</span>`:"")+(i===q.gap?`<b class="gap" id="ggap">?</b>`:`<b>${esc(x)}</b>`)).join("")}${q.cyc?`<span class="ar2">↺</span>`:""}</div>`:""}
    ${q.big?`<div class="gbig sent" id="gbig" dir="auto">${q.e?emo(q.e,"gemo"):""}<span>${esc(q.big)}</span></div>`:""}
@@ -220,6 +220,7 @@ function questionView(P,s,q,o){window.__q=q;const A=o.ui==="ar",rtl=A?' dir="rtl
       say([{text:tr("خذ وقتك. نقرأ السؤال معا.","Prends ton temps. On relit la question ensemble."),lang:o.ui}],()=>readAll(()=>lockAll(false)));return}
     if(ok||exam){locked=true;btns.forEach(x=>x.disabled=true);fill();
       const right=btns[q.a];right.classList.add("good");if(!ok){b.classList.add("bad");first=false}
+      if(ok&&!exam)fxBurst(b);
       if(ok){chime();$("#gfb").className="fb ok";$("#gfb").textContent=first?"⭐ "+bravo(o.ui):teach?"👍 "+tr("فهمت! سنعيد هذا السؤال بعد قليل.","Bien ! On reverra cette question tout à l'heure."):"👍 "+bravo(o.ui)}else{buzz();$("#gfb").className="fb ko";$("#gfb").textContent=tr("الجواب الصحيح: ","La bonne réponse : ")+q.ch[q.a]}
       if(q.why)showHelp(q.why);
       const it=[{text:ok?bravo(o.ui):tr("الجواب الصحيح هو","La bonne réponse est"),lang:o.ui},...(ok?[]:partsOf(q.ch[q.a],o.lat)),...why()];
@@ -251,17 +252,15 @@ function mountGen(P,s,L0,key){
     sayOne(tr("اختر لعبة!","Choisis un jeu !"),ui);P.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>run(b.dataset.m))};
   const make=m=>{const f=n=>{const out=[];for(let g=0;out.length<n&&g<n*8;g++){const fn=pick(m==="calc"?[G.calc]:m==="steps"?G.steps:m==="find"?G.find:G.all);const q=fn&&fn();if(q&&!out.some(o=>o.q===q.q&&(o.m||o.big||o.gap)===(q.m||q.big||q.gap)))out.push(q)}return out};
     return m==="learn"?G.learn:m==="calc"?f(8):m==="mix"?f(10):f(Math.min(8,Math.max(4,(m==="steps"?G.steps:G.find).length*3)))};
-  const run=m=>{const qs=make(m);let k=0,good=0;
-    const top=()=>`<div class="advtop"><button class="ghost" id="gmenu">↩ ${tr("الألعاب","Les jeux")}</button><span class="dcount">${k} / ${qs.length}</span></div>`;
-    const next=ok=>{if(ok)good++;stopSpeak();if(!document.body.contains(P))return;if(k>=qs.length)return end();const q=qs[k++];
-      if(q.kind==="learn")learn(q);else{questionView(P,s,q,{ui,lat,top:top(),mode:"game",hint:true,onNext:next,requeue:q2=>{if(!q2._again)qs.push(reshuf({...q2,_again:true}))}});$("#gmenu").onclick=menu}};
-    const learn=q=>{P.innerHTML=top()+`<div class="saycard" style="--c:${s.c}">${emo(q.e||"⭐","emo")}<div class="lw" dir="auto">${q.lang==="fr"?q.t.split(" ").map(x=>colorWord(x,"fr")).join(" "):esc(q.t)}</div><div class="tr${q.trLang==="ar"?" ar":""}" dir="auto">${esc(q.tr)}</div></div><div id="rp"></div><div class="fb" id="gfb"></div>`;
+  const run=m=>{const qs=make(m),r=newRun(qs.length);let k=0,good=0;
+    const top=()=>{r.total=qs.length;r.done=Math.max(0,k-1);return `<div class="advtop"><button class="ghost" id="gmenu">↩ ${tr("الألعاب","Les jeux")}</button><span class="dcount">${k} / ${qs.length}</span></div>`+hudHTML(r)};
+    const next=ok=>{if(ok){good++;runHit(r)}else if(k)runMiss(r);stopSpeak();if(!document.body.contains(P))return;if(k>=qs.length)return end();const q=qs[k++];
+      if(q.kind==="learn")learnQ(q);else{questionView(P,s,q,{ui,lat,top:top(),mode:"game",hint:true,onNext:next,requeue:q2=>{if(!q2._again)qs.push(reshuf({...q2,_again:true}))}});$("#gmenu").onclick=menu}};
+    const learnQ=q=>{P.innerHTML=top()+`<div class="saycard" style="--c:${s.c}">${emo(q.e||"⭐","emo")}<div class="lw" dir="auto">${q.lang==="fr"?q.t.split(" ").map(x=>colorWord(x,"fr")).join(" "):esc(q.t)}</div><div class="tr${q.trLang==="ar"?" ar":""}" dir="auto">${esc(q.tr)}</div></div><div id="rp"></div><div class="fb" id="gfb"></div>`;
       $("#gmenu").onclick=menu;speakSeq([{text:q.t,lang:q.lang},{text:q.tr,lang:q.trLang},{text:q.t,lang:q.lang}],q.lang);
       repeatBlock($("#rp"),q.t,q.lang,()=>{chime();$("#gfb").className="fb ok";$("#gfb").textContent="⭐ "+bravo(ui);setTimeout(()=>next(true),900)})};
-    const end=()=>{const st=Math.max(1,Math.round(good/3));addStars(st);S.games[key]=S.games[key]||{};S.games[key][m]=1;learn("g",[key,m,good,qs.length]);
-      P.innerHTML=`<div class="exam-res"><div class="cele-emo">${emo("🏆","celeimg")}</div><h2>${esc(bravo(ui))}</h2><p${rtl}>${tr(`${good} من ${qs.length} من أول محاولة`,`${good} sur ${qs.length} du premier coup`)} · +${st} ⭐</p>
-        <div class="ctrl" style="justify-content:center"><button class="play" id="gagain" style="--c:${s.c}">↻ ${tr("لعبة جديدة","Une nouvelle partie")}</button><button class="ghost" id="gmenu">${tr("ألعاب أخرى","Autres jeux")}</button></div></div>`;
-      chime();sayOne(bravo(ui),ui);$("#gagain").onclick=()=>run(m);$("#gmenu").onclick=menu};
+    const end=()=>{const st=Math.max(1,Math.round(good/3));S.games[key]=S.games[key]||{};S.games[key][m]=1;learn("g",[key,m,good,qs.length]);r.done=qs.length;
+      const br=bravo(ui);gameEnd(P,{run:r,id:"jeu-"+key+"-"+m,stars:st,c:s.c,title:br,sub:tr(`${good} من ${qs.length} من أول محاولة`,`${good} sur ${qs.length} du premier coup`),again:()=>run(m),more:[[tr("ألعاب أخرى","Autres jeux"),menu]]});sayOne(br,ui)};
     next(false)};
   menu()}
 

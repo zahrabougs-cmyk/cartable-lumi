@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Politique de sécurité : seul le code de ce site peut s'exécuter, même si un texte malveillant arrive dans la page.
+     Si tu ajoutes un service externe, ajoute son adresse ici. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://commons.wikimedia.org https://upload.wikimedia.org; media-src 'self' data: blob:; connect-src 'self' https://*.supabase.co http://localhost:* http://127.0.0.1:* https://cdn.jsdelivr.net https://commons.wikimedia.org https://upload.wikimedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Cartable Lumi</title>
 <meta name="description" content="Apprendre le programme de 1ère année collège avec des vidéos parlées, des chansons, des jeux 3D et un prof IA.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,10 +18,8 @@
 <meta name="apple-mobile-web-app-title" content="Lumi">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<script>window.IS_APP=true</script>
-<!-- Three.js : copie locale (npm install) sinon CDN -->
+<script src="js/boot.js"></script>
 <script src="vendor/three.min.js"></script>
-<script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"><\/script>')</script>
 </head>
 <body>
 <header class="top"><div class="top-in">
@@ -42,7 +43,7 @@
 <script src="js/assets.js"></script>
 <script src="js/emoji-list.js"></script>
 <script src="js/config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/lecons.js"></script>
 <script src="js/lecons-maths.js"></script>
@@ -62,6 +63,7 @@
 <script src="js/music.js"></script>
 <script src="js/world3d.js"></script>
 <script src="js/rewards.js"></script>
+<script src="js/arcade.js"></script>
 <script src="js/hidden.js"></script>
 <script src="js/mots.js"></script>
 <script src="js/aventure.js"></script>

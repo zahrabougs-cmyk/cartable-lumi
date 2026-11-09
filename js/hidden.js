@@ -140,8 +140,8 @@ function mountHidden(id,mode="find"){
   const sc=SCENES.find(s=>s.id===id),hw=$("#hw");if(!hw)return;const lang=S.hidLang||"fr";
   const nameOf=o=>lang==="en"?o[3]:lang==="ar"?o[2]:o[1],langV=lang;
   if(mode==="diff")return mountDiff(sc,hw);
-  const hidIdx=shuffle(sc.objs.map((o,i)=>i).filter(i=>sc.objs[i][8])).slice(0,3);const targets=shuffle([...hidIdx,...shuffle(sc.objs.map((o,i)=>i).filter(i=>!sc.objs[i][8])).slice(0,8-hidIdx.length)]);const opened=new Set();let found=new Set(),hints=3,cur=null,busy=false;
-  hw.innerHTML=`<div class="htop"><div class="lumi-girl small">${emo("👧🏽","girl")}<div class="bub" id="hbub"></div></div>
+  const hidIdx=shuffle(sc.objs.map((o,i)=>i).filter(i=>sc.objs[i][8])).slice(0,3);const targets=shuffle([...hidIdx,...shuffle(sc.objs.map((o,i)=>i).filter(i=>!sc.objs[i][8])).slice(0,8-hidIdx.length)]);const opened=new Set();let found=new Set(),hints=3,cur=null,busy=false;const run=newRun(targets.length);
+  hw.innerHTML=hudHTML(run)+`<div class="htop"><div class="lumi-girl small">${emo("👧🏽","girl")}<div class="bub" id="hbub"></div></div>
      <div class="hbtns"><button class="ghost" id="hhint">🔍 Indice (${hints})</button><button class="ghost" id="hdiff">🧩 Les différences</button>
      <div class="seg"><button data-hl="fr" aria-pressed="${lang==="fr"}">FR</button><button data-hl="en" aria-pressed="${lang==="en"}">EN</button><button data-hl="ar" aria-pressed="${lang==="ar"}" class="ar">عربي</button></div></div></div>
    <div class="hscene" id="hsc">${sceneSVG(sc)}</div>
@@ -163,20 +163,20 @@ function mountHidden(id,mode="find"){
     const inside=sc.objs.filter(o=>o[8]===b.id).length;sayBoth(`Tu ouvres ${b.fr} ! ${inside?"Qu'est-ce qu'il y a dedans ?":"C'est vide."}`,`فتحت ${b.ar}! ${inside?"ماذا يوجد في الداخل؟":"إنه فارغ."}`)}));
   hw.querySelectorAll(".hobj").forEach(g=>g.addEventListener("click",()=>{if(busy)return;const i=+g.dataset.i,o=sc.objs[i];ac();
     if(targets.includes(i)&&!found.has(i)){found.add(i);busy=true;chime();ring(o[4],o[5],o[6],"ok");g.classList.add("got");
-      const card=hw.querySelector(`.hitem[data-t="${i}"]`);card.classList.add("found");
+      const card=hw.querySelector(`.hitem[data-t="${i}"]`);card.classList.add("found");runHit(run);run.done=found.size;hudDraw(run);fxBurst(card);
       const word=nameOf(o);sayBoth(lang==="en"?`${bravo("en")} It's ${word}. Say: ${word}!`:`${bravo("fr")} C'est ${word}. Dis : ${word} !`,`${bravo("ar")} هذا ${o[2]}. قل: ${o[2]}`);
       const box=$("#hrep");box.innerHTML=`<div class="hrep-in">${emo(o[0],"repimg")}<div id="rp"></div></div>`;
       repeatBlock($("#rp"),word,langV,()=>{addStars(1);box.innerHTML="";busy=false;if(found.size===targets.length)finish()});box.scrollIntoView({behavior:"smooth",block:"nearest"})}
     else if(found.has(i)){bub("Déjà trouvé !")}
-    else{buzz();g.classList.add("nope");setTimeout(()=>g.classList.remove("nope"),500);sayBoth(`Ça, c'est ${nameOf(o)}.`,"هذا "+o[2])}}));
-  function finish(){S.hid=S.hid||{};S.hid[id]=(S.hid[id]||0)+1;save();addStars(2);
-    hw.querySelector("#htr").innerHTML=`<div class="hdone"><b>🎉 Bravo ${esc(S.name)} ! Tu as tout trouvé.</b><div class="ctrl"><button class="play" id="hagain" style="--c:${sc.c}">↻ Rejouer</button><button class="ghost" id="hdiff2">🧩 Trouver les différences</button><a class="ghost" href="#cherche">Autres scènes</a></div></div>`;
-    sayBoth(`Bravo ${S.name} ! Tu as tout trouvé.`,"أحسنت! وجدت كل شيء.");$("#hagain").onclick=()=>mountHidden(id);$("#hdiff2").onclick=()=>mountHidden(id,"diff")}
+    else{buzz();runMiss(run);hudDraw(run);g.classList.add("nope");setTimeout(()=>g.classList.remove("nope"),500);sayBoth(`Ça, c'est ${nameOf(o)}.`,"هذا "+o[2])}}));
+  function finish(){S.hid=S.hid||{};S.hid[id]=(S.hid[id]||0)+1;save();const faux=(3-hints)+run.miss;
+    gameEnd(hw,{run,id:"cherche-"+id,stars:faux<=1?3:faux<=3?2:1,c:sc.c,title:`Bravo ${S.name} !`,sub:"Tu as tout trouvé.",again:()=>mountHidden(id),more:[["🧩 Les différences",()=>mountHidden(id,"diff")]],back:["#cherche","Autres scènes"]});
+    sayBoth(`Bravo ${S.name} ! Tu as tout trouvé.`,"أحسنت! وجدت كل شيء.")}
 }
 // ----- trouve les différences -----
 function mountDiff(sc,hw){
-  const idx=shuffle(sc.objs.map((o,i)=>i).filter(i=>!sc.objs[i][8]));const miss=idx.slice(0,2),hue=idx.slice(2,4),flip=idx.slice(4,5);const all=[...miss,...hue,...flip];const found=new Set();
-  hw.innerHTML=`<div class="htop"><div class="lumi-girl small">${emo("👧🏽","girl")}<div class="bub" id="hbub">Il y a 5 différences entre les deux images. Touche-les dans l'image du bas !</div></div>
+  const idx=shuffle(sc.objs.map((o,i)=>i).filter(i=>!sc.objs[i][8]));const miss=idx.slice(0,2),hue=idx.slice(2,4),flip=idx.slice(4,5);const all=[...miss,...hue,...flip];const found=new Set(),run=newRun(5);
+  hw.innerHTML=hudHTML(run)+`<div class="htop"><div class="lumi-girl small">${emo("👧🏽","girl")}<div class="bub" id="hbub">Il y a 5 différences entre les deux images. Touche-les dans l'image du bas !</div></div>
     <div class="hbtns"><button class="ghost" id="hback">🔎 Revenir à « Cherche et trouve »</button><span class="dcount" id="dc">0 / 5</span></div></div>
    <div class="hscene"><div class="dlab">Image 1</div>${sceneSVG(sc)}</div><div class="hscene"><div class="dlab">Image 2 : touche les différences</div><div id="d2">${sceneSVG(sc,"diff",{miss,hue,flip})}</div></div><div id="hrep"></div>`;
   svgImgFallback(hw);sayOne("Il y a 5 différences entre les deux images. Touche-les dans l'image du bas !","fr");
@@ -184,12 +184,12 @@ function mountDiff(sc,hw){
   const svg=$("#d2 svg");
   svg.addEventListener("click",e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());
     let hit=null,bd=1e9;all.forEach(i=>{const o=sc.objs[i];const d=Math.hypot(p.x-o[4],p.y-o[5]);if(d<o[6]*.8+18&&d<bd){bd=d;hit=i}});
-    if(hit==null||found.has(hit)){buzz();return}found.add(hit);chime();const o=sc.objs[hit];
+    if(hit==null||found.has(hit)){buzz();if(hit==null){runMiss(run);hudDraw(run)}return}found.add(hit);chime();runHit(run);run.done=found.size;hudDraw(run);const o=sc.objs[hit];
     [svg,hw.querySelector(".hscene svg")].forEach(s=>{const c=document.createElementNS("http://www.w3.org/2000/svg","circle");c.setAttribute("cx",o[4]);c.setAttribute("cy",o[5]);c.setAttribute("r",o[6]*.75);c.setAttribute("class","ring ok");s.querySelector(".marks").appendChild(c)});
     $("#dc").textContent=`${found.size} / 5`;const what=miss.includes(hit)?`${o[1]} a disparu !`:hue.includes(hit)?`${o[1]} a changé de couleur !`:`${o[1]} est tourné de l'autre côté !`;
     $("#hbub").textContent=what+" Dis : "+o[1];speakSeq([{text:what+" Dis : "+o[1]},...(S.readAr?[{text:o[2],lang:"ar"}]:[])],"fr");
     const box=$("#hrep");box.innerHTML=`<div class="hrep-in">${emo(o[0],"repimg")}<div id="rp"></div></div>`;repeatBlock($("#rp"),o[1],"fr",()=>{addStars(1);box.innerHTML="";
-      if(found.size===5){addStars(2);$("#hbub").textContent=`Bravo ${S.name} ! Tu as trouvé les 5 différences.`;sayOne(`Bravo ${S.name} ! Tu as trouvé les 5 différences.`,"fr")}})});
+      if(found.size===5){gameEnd(hw,{run,id:"diff-"+sc.id,stars:run.miss<=1?3:run.miss<=4?2:1,c:sc.c,title:`Bravo ${S.name} !`,sub:"Tu as trouvé les 5 différences.",again:()=>mountHidden(sc.id,"diff"),back:["#cherche","Autres scènes"]});sayOne(`Bravo ${S.name} ! Tu as trouvé les 5 différences.`,"fr")}})});
 }
 
 // ----- cachettes : frigo, placards, tiroirs, coffres, buissons -----

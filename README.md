@@ -171,7 +171,7 @@ Sans réglage, tout reste dans l'appareil. Pour garder la progression **en ligne
    - **Redirect URLs** : ajoute `https://cartable-lumi.netlify.app/**` et `http://localhost:5173/**`.
 5. **Authentication → Email Templates** : dans **Confirm signup** et dans **Magic Link**, ajoute la ligne
    `Ton code : {{ .Token }}`. Le parent peut alors **écrire le code à 6 chiffres dans l'appli** au lieu de cliquer le lien : ça marche même si l'email est ouvert sur un autre téléphone.
-6. Pour une appli de famille, le plus simple est de couper la confirmation : **Authentication → Sign In / Providers → Email → Confirm email : OFF**. Le compte marche tout de suite.
+6. **Sécurité (avant d'ouvrir au public)** : laisse **Authentication → Sign In / Providers → Email → Confirm email : ON** (sinon n'importe qui peut créer un compte au nom d'une autre personne). Dans la même page, mets la longueur minimale du mot de passe à **8** et active **Prevent use of leaked passwords** si ton offre le propose.
 7. Le service gratuit de Supabase n'envoie que **quelques emails par heure**. Si l'appli dit « trop d'emails », attends, ou branche un vrai service d'email (**Project Settings → Authentication → SMTP**, par exemple Brevo ou Resend, gratuits).
 8. Remets le dossier en ligne sur Netlify.
 
@@ -182,10 +182,10 @@ Les données des enfants restent privées : chaque parent ne voit que ses enfant
 ## Prof IA avec Ollama
 
 1. Installe un modèle : `ollama pull qwen2.5:7b` (ou `ollama pull llama3.2` pour un PC plus léger).
-2. Autorise le site à parler à Ollama :
-   - Windows (PowerShell) : `setx OLLAMA_ORIGINS "*"`, puis quitte et relance Ollama.
-   - Mac : `launchctl setenv OLLAMA_ORIGINS "*"`, puis relance l'application.
-   - Linux : `sudo systemctl edit ollama`, ajoute `Environment="OLLAMA_ORIGINS=*"` sous `[Service]`, puis `sudo systemctl restart ollama`.
+2. Autorise **seulement ton site** à parler à Ollama (ne mets pas `*` : tous les sites web visités depuis cet ordinateur pourraient alors l'utiliser). Remplace l'adresse par celle de ton site :
+   - Windows (PowerShell) : `setx OLLAMA_ORIGINS "https://cartable-lumi.netlify.app"`, puis quitte et relance Ollama.
+   - Mac : `launchctl setenv OLLAMA_ORIGINS "https://cartable-lumi.netlify.app"`, puis relance l'application.
+   - Linux : `sudo systemctl edit ollama`, ajoute `Environment="OLLAMA_ORIGINS=https://cartable-lumi.netlify.app"` sous `[Service]`, puis `sudo systemctl restart ollama`.
 3. Dans le site : **Réglages > Prof IA > Tester et choisir le modèle**.
 
 Le prof IA marche sur l'ordinateur où Ollama est installé. Si Chrome demande l'accès au réseau local, accepte.
@@ -196,4 +196,4 @@ Les photos viennent de Wikimedia Commons et se chargent depuis internet. L'auteu
 
 ## Vie privée
 
-Le prénom, les étoiles et les notes restent dans le navigateur de l'appareil (localStorage). Rien n'est envoyé ailleurs, sauf les messages au prof IA, qui vont seulement à ton Ollama.
+Sans compte, le prénom, les étoiles et les notes restent dans le navigateur de l'appareil (localStorage), et les messages au prof IA vont seulement à ton Ollama. Avec un compte, l'email du parent, le prénom de l'enfant et son suivi (temps, leçons, notes) sont gardés chez Supabase. Les images et polices viennent de jsDelivr, Wikimedia et Google Fonts, qui voient donc l'adresse IP du visiteur.

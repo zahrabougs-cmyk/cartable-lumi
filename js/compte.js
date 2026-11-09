@@ -20,21 +20,43 @@ let SB=null,USER=null;
 try{if(window.LUMI_CFG&&LUMI_CFG.url&&LUMI_CFG.key&&window.supabase)SB=supabase.createClient(LUMI_CFG.url,LUMI_CFG.key,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}})}catch(e){SB=null}
 
 // ----- sauvegarde en ligne -----
-let pushT=null;
-function cloudPush(now){if(!SB||!USER||!isCloudId(ACC.cur))return;clearTimeout(pushT);
-  const id=ACC.cur,go=()=>SB.from("children").update({state:S,name:S.name,l1:S.l1,l2:S.l2,updated_at:new Date().toISOString()}).eq("id",id).then(r=>{if(r.error)console.warn(r.error)});
-  if(now)go();else pushT=setTimeout(go,10000)}
+// au plus un envoi par minute et par enfant pendant qu'il travaille (la base tient ainsi beaucoup plus de familles en même temps),
+// plus un envoi immédiat quand l'appli passe en arrière-plan. Renvoie true si la version en ligne est à jour.
+let pushT=null,pushedT=0;
+function cloudPush(now){if(!SB||!USER||!isCloudId(ACC.cur))return Promise.resolve(true);
+  const id=ACC.cur,go=()=>{pushT=null;const t=S._t;if(t&&t===pushedT)return Promise.resolve(true);
+    return SB.from("children").update({state:S,name:S.name,l1:S.l1,l2:S.l2,updated_at:new Date().toISOString()}).eq("id",id).then(r=>{if(r.error){console.warn(r.error);return false}pushedT=t;return true},()=>false)};
+  if(now){clearTimeout(pushT);return go()}
+  if(!pushT)pushT=setTimeout(go,60000);return Promise.resolve(true)}
 document.addEventListener("visibilitychange",()=>{if(document.hidden)cloudPush(true)});
 const readLocal=id=>{try{return JSON.parse(localStorage.getItem("lumi-v1-"+id)||"null")}catch(e){return null}};
 // après la connexion : on récupère les enfants en ligne, on envoie ceux créés dans l'appareil, on garde la version la plus récente
-async function cloudPull(){
+// (un seul à la fois : deux récupérations en parallèle enverraient deux fois les enfants de l'appareil)
+let pullP=null;
+function cloudPull(){return pullP||(pullP=doCloudPull().finally(()=>{pullP=null}))}
+async function doCloudPull(){
   const sel="id,name,l1,l2,state,updated_at",{data,error}=await SB.from("children").select(sel).order("updated_at");if(error)throw error;
+  const kept=[]; // un enfant que la base refuse reste dans l'appareil au lieu de disparaître
   for(const c of ACC.children.filter(c=>!isCloudId(c.id))){
     const r=await SB.from("children").insert({name:c.name,l1:c.l1,l2:c.l2,state:readLocal(c.id)||{}}).select(sel).single();
-    if(!r.error){data.push(r.data);if(ACC.cur===c.id)ACC.cur=r.data.id;try{localStorage.removeItem("lumi-v1-"+c.id)}catch(e){}}}
-  ACC.children=data.map(c=>({id:c.id,name:c.name,l1:c.l1,l2:c.l2}));
+    if(r.error)kept.push(c);else{data.push(r.data);if(ACC.cur===c.id)ACC.cur=r.data.id;try{localStorage.removeItem("lumi-v1-"+c.id)}catch(e){}}}
+  ACC.children=[...data.map(c=>({id:c.id,name:cleanName(c.name),l1:c.l1,l2:c.l2})),...kept];
   data.forEach(c=>{const loc=readLocal(c.id),rem=c.state||{};if(!loc||(rem._t||0)>(loc._t||0))try{localStorage.setItem("lumi-v1-"+c.id,JSON.stringify(rem))}catch(e){}});
-  if(!curChild())ACC.cur=null;const pin=USER&&USER.user_metadata&&USER.user_metadata.pin;if(pin)ACC.pin=pin;saveAcc()}
+  if(!curChild())ACC.cur=null;const pin=USER&&USER.user_metadata&&USER.user_metadata.pin;if(pin)ACC.pin=pin;saveAcc();await pinMigrate()}
+
+// ----- code des parents : jamais gardé en clair (format « p1$sel$empreinte », PBKDF2-SHA256) -----
+// C'est un verrou contre les enfants, pas une protection du compte : le compte, lui, est protégé par Supabase.
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),hasCrypto=()=>!!(window.crypto&&crypto.subtle);
+async function pinHash(pin,salt){salt=salt||b64(crypto.getRandomValues(new Uint8Array(16)));
+  const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000},k,256);
+  return "p1$"+salt+"$"+b64(bits)}
+const pinHashed=()=>/^p1\$/.test(ACC.pin||"");
+async function pinCheck(v){if(!pinHashed())return v===ACC.pin;try{return await pinHash(v,ACC.pin.split("$")[1])===ACC.pin}catch(e){return false}}
+async function pinSet(v){ACC.pin=hasCrypto()?await pinHash(v):v;saveAcc();if(SB&&USER)try{await SB.auth.updateUser({data:{pin:ACC.pin}})}catch(e){console.warn(e)}}
+async function pinMigrate(){if(ACC.pin&&!pinHashed()&&hasCrypto())try{await pinSet(ACC.pin)}catch(e){console.warn(e)}}
+// un prénom ne doit jamais pouvoir contenir du code
+const cleanName=s=>String(s||"").replace(/[<>&"`]/g,"").trim().slice(0,30);
 
 // ----- les langues choisies : 1re langue (explications) et 2e langue (mots techniques) -----
 const LANGS={ar:"العربية",fr:"Français",en:"English"};
@@ -45,24 +67,34 @@ function selectChild(id){cloudPush(true);ACC.cur=id;saveAcc();loadS();const c=cu
   langFlags();save();applySettings();starChip();bumpStreak();accStep=null;go("accueil");route()}
 
 // ----- suivi : temps par jour, par matière, étude / jeu / examen, et ce qu'elle a appris -----
-let TRK=null,lastAct=Date.now();
+// le temps se compte en arrière-plan, sans rien afficher à l'enfant
+let TRK=null,lastAct=Date.now(),lastTick=Date.now(),lastSave=Date.now(),heldSec=0;
 function logDay(){S.log=S.log||{};const d=day();if(!S.log[d]){S.log[d]={t:{},s:{},l:[],w:[],ex:[],g:[]};
   const keys=Object.keys(S.log).sort();keys.slice(0,Math.max(0,keys.length-120)).forEach(k=>delete S.log[k])}return S.log[d]}
-function tick(){if(!TRK||!curChild()||document.hidden)return;if(Date.now()-lastAct>120000&&!document.body.classList.contains("talking"))return;
-  const L=logDay();L.t[TRK.kind]=(L.t[TRK.kind]||0)+15;L.s[TRK.subj]=(L.s[TRK.subj]||0)+15;save()}
+function addTime(sec){if(!TRK||!curChild()||sec<=0)return;const L=logDay();L.t[TRK.kind]=(L.t[TRK.kind]||0)+sec;if(TRK.subj)L.s[TRK.subj]=(L.s[TRK.subj]||0)+sec}
+// toutes les 5 s. Après 30 s sans geste, le temps est mis de côté : il compte si l'enfant revient avant 2 min, sinon il est oublié
+function tick(){const now=Date.now(),dt=Math.min(10,Math.round((now-lastTick)/1000));lastTick=now;if(!TRK||!curChild()||document.hidden)return;
+  const idle=now-lastAct;if(idle<=30000||document.body.classList.contains("talking")){addTime(dt+heldSec);heldSec=0}else if(idle<=120000)heldSec+=dt;else heldSec=0;
+  if(now-lastSave>=15000){lastSave=now;save()}}
 function learn(type,v){if(!curChild())return;const L=logDay();
   if(type==="l"){if(!L.l.includes(v))L.l.push(v)}else if(type==="w"){if(!L.w.includes(v)&&L.w.length<300)L.w.push(v)}else(L[type]=L[type]||[]).push(v);save()}
-function trackRoute(){const v=view;TRK=null;
+function trackRoute(){const v=view;addTime(heldSec);heldSec=0;TRK=null;
+  if(v.name!=="parents"){parentOK=false;pinChange=false} // quitter l'espace parents le referme
   if(v.name==="lesson"){TRK={kind:tab==="examen"?"examen":["jeux","aventure","monde"].includes(tab)?"jeu":"etude",subj:v.id};learn("l",v.id+"-"+v.n)}
   else if(v.name==="subject")TRK={kind:"etude",subj:v.id};
   else if(v.name==="fle"||v.name==="fleu")TRK={kind:"etude",subj:"francais"};
-  else if(["jeux","cherche","hidden","diff","mots","mot","world","jeucours","album"].includes(v.name))TRK={kind:"jeu",subj:"jeux"}}
+  else if(v.name==="gen")TRK={kind:"etude",subj:v.id};
+  else if(["jeux","cherche","hidden","diff","mots","mot","world","jeucours","album"].includes(v.name))TRK={kind:"jeu",subj:"jeux"};
+  else if(!["parents","enfant"].includes(v.name))TRK={kind:"app"}} // accueil, menus : compte dans le temps total de l'appli
 async function accInit(){
   const rb=repeatBlock;repeatBlock=(el,t,l,done)=>rb(el,t,l,(...a)=>{learn("w",t);done(...a)});
-  setInterval(tick,15000);["pointerdown","keydown","scroll"].forEach(e=>addEventListener(e,()=>{lastAct=Date.now()},{passive:true}));
+  setInterval(tick,5000);["pointerdown","keydown","scroll"].forEach(e=>addEventListener(e,()=>{lastAct=Date.now()},{passive:true}));
+  addEventListener("pagehide",()=>{if(curChild())save()});document.addEventListener("visibilitychange",()=>{if(document.hidden&&curChild())save()});
+  await pinMigrate();
   if(!SB)return;try{const {data}=await SB.auth.getSession();USER=data.session?data.session.user:null}catch(e){}
+  // setTimeout : appeler Supabase directement dans ce rappel peut bloquer la connexion (consigne de Supabase)
   SB.auth.onAuthStateChange((ev,ses)=>{const was=USER;USER=ses?ses.user:null;
-    if(ev==="SIGNED_IN"&&!was&&USER){cleanAuthUrl();cloudPull().then(()=>{loadS();accStep=null;render()}).catch(e=>console.warn(e))}});
+    if(ev==="SIGNED_IN"&&!was&&USER)setTimeout(()=>{cleanAuthUrl();cloudPull().then(()=>{loadS();accStep=null;render()}).catch(e=>console.warn(e))},0)});
   if(USER)cleanAuthUrl();
   if(USER)try{await cloudPull();loadS();if(curChild()){const c=curChild();S.l1=c.l1;S.l2=c.l2;langFlags()}starChip();route()}catch(e){console.warn(e)}}
 
@@ -79,13 +111,13 @@ function authMsg(e){const m=(e&&e.message||String(e||"")).toLowerCase();
   if(m.includes("already registered")||m.includes("already been registered"))return "Ce compte existe déjà : connecte-toi avec ton mot de passe, ou reçois un code par email.";
   if(m.includes("token has expired")||m.includes("otp")&&m.includes("expired"))return "Ce code a expiré. Demande un nouveau code.";
   if(m.includes("invalid")&&m.includes("token"))return "Ce code n'est pas bon. Vérifie les 6 chiffres.";
-  if(m.includes("password")&&m.includes("6"))return "Le mot de passe doit avoir 6 caractères ou plus.";
+  if(m.includes("password")&&/at least|characters|weak|pwned|known/.test(m))return "Ce mot de passe est trop court ou trop facile à deviner. Choisis-en un de 8 caractères ou plus.";
   if(m.includes("failed to fetch")||m.includes("network"))return "Pas de connexion internet. Tu peux continuer sans compte.";
   return e&&e.message||String(e)}
 function loginHTML(){return `<section class="onb"><div class="lumi-girl hero">${emo("👧🏽","girl")}</div><h1>Espace de la famille</h1>
   <p>Un parent se connecte avec son email. La progression de chaque enfant est gardée, même sur un autre téléphone.<br><span class="ar" dir="rtl">يتصل أحد الوالدين ببريده الإلكتروني، فيُحفظ تقدم كل طفل.</span></p>
   <form id="accf" class="accf"><input type="email" id="acce" placeholder="email@exemple.com" autocomplete="email" required aria-label="Email du parent">
-   <input type="password" id="accp" placeholder="Mot de passe (6 caractères ou plus)" autocomplete="current-password" minlength="6" aria-label="Mot de passe">
+   <input type="password" id="accp" placeholder="Mot de passe (8 caractères ou plus)" autocomplete="current-password" minlength="6" aria-label="Mot de passe">
    <div class="ctrl" style="justify-content:center"><button class="play" style="--c:#FF6F61" type="submit" id="accin">Se connecter</button><button class="ghost" type="button" id="accup">Créer un compte</button></div>
    <button class="linkbtn" type="button" id="accotp">Pas de mot de passe ou oublié ? Recevoir un code par email</button>
    <div class="otp" id="otpbox" hidden><p><b>📩 Regarde ta boîte email</b> (et les spams). Écris le <b>code à 6 chiffres</b> ici :</p>
@@ -113,7 +145,7 @@ function mountAcc(){
     $("#accf").onsubmit=async e=>{e.preventDefault();const c=creds();if(!c.password){msg("Écris ton mot de passe, ou reçois un code par email.");return}msg("Connexion…");
       const r=await SB.auth.signInWithPassword(c);
       if(r.error){msg(authMsg(r.error));if(/not confirmed/i.test(r.error.message))showOtp("signup");return}USER=r.data.user;try{await after()}catch(er){msg(authMsg(er))}};
-    $("#accup").onclick=async()=>{const c=creds();if(!c.email||c.password.length<6){msg("Écris un email et un mot de passe de 6 caractères ou plus.");return}msg("Création du compte…");
+    $("#accup").onclick=async()=>{const c=creds();if(!c.email||c.password.length<8){msg("Écris un email et un mot de passe de 8 caractères ou plus.");return}msg("Création du compte…");
       const r=await SB.auth.signUp({...c,options:{emailRedirectTo:APP_URL()}});if(r.error){msg(authMsg(r.error));return}
       if(r.data.user&&r.data.user.identities&&!r.data.user.identities.length){msg(authMsg({message:"already registered"}));return}
       if(!r.data.session){showOtp("signup","Compte créé ! Un email de confirmation est parti vers "+c.email+".");return}USER=r.data.user;try{await after()}catch(er){msg(authMsg(er))}};
@@ -130,22 +162,26 @@ function mountAcc(){
   if($("#kidadd"))$("#kidadd").onclick=()=>{accStep="add";render()};
   if($("#kidback"))$("#kidback").onclick=()=>{accStep=null;render()};
   if($("#kidf")){$("#kidf").l1.forEach(x=>x.onchange=()=>{const l1=$("#kidf").l1.value,l2=$("#kidf").l2;if(l2.value===l1)l2.value=l1==="ar"?"fr":"ar"});
-    $("#kidf").onsubmit=async e=>{e.preventDefault();const f=$("#kidf"),n=$("#kidn").value.trim();if(!n)return;
+    $("#kidf").onsubmit=async e=>{e.preventDefault();const f=$("#kidf"),n=cleanName($("#kidn").value);if(!n)return;
       const name=n.charAt(0).toUpperCase()+n.slice(1),l1=f.l1.value;let l2=f.l2.value;if(l2===l1)l2=l1==="ar"?"fr":"ar";let id=newLocalId();
       if(SB&&USER){const r=await SB.from("children").insert({name,l1,l2,state:{}}).select("id").single();if(r.error){$("#kidm").textContent=r.error.message;return}id=r.data.id}
       ACC.children.push({id,name,l1,l2});saveAcc();selectChild(id);chime();sayOne(l1==="ar"?`مرحبا ${name}!`:`Bienvenue ${name} !`,l1)}}}
 const P_bind=(sel,f)=>document.querySelectorAll(sel).forEach(f);
 
 // ----- espace parents : protégé par un code -----
-let parentOK=false;
+let parentOK=false,pinChange=false;
 function parentsView(main){
   const back=`<a class="back" href="#accueil">← Accueil</a>`;
-  if(!ACC.pin){main.innerHTML=back+`<section class="onb"><h1>👨‍👩‍👧 Espace parents</h1><p>Choisis un code à 4 chiffres. Il protège cet espace : les enfants ne pourront pas l'ouvrir.</p>
+  if(!ACC.pin||pinChange){main.innerHTML=back+`<section class="onb"><h1>👨‍👩‍👧 Espace parents</h1><p>Choisis un code à 4 chiffres. Il protège cet espace : les enfants ne pourront pas l'ouvrir.</p>
      <form id="pinf" class="accf"><input type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" id="pin" placeholder="••••" required aria-label="Nouveau code"><button class="play" style="--c:#4C5BD4" type="submit">Enregistrer le code</button></form></section>`;
-    $("#pinf").onsubmit=e=>{e.preventDefault();ACC.pin=$("#pin").value;saveAcc();parentOK=true;if(SB&&USER)SB.auth.updateUser({data:{pin:ACC.pin}});parentsView(main)};return}
+    $("#pinf").onsubmit=async e=>{e.preventDefault();await pinSet($("#pin").value);pinChange=false;parentOK=true;parentsView(main)};return}
   if(!parentOK){main.innerHTML=back+`<section class="onb"><h1>👨‍👩‍👧 Espace parents</h1><p>Écris le code des parents.</p>
      <form id="pinf" class="accf"><input type="password" inputmode="numeric" maxlength="4" id="pin" placeholder="••••" required aria-label="Code des parents"><button class="play" style="--c:#4C5BD4" type="submit">Entrer</button><p class="noteline" id="pinm"></p></form></section>`;
-    $("#pinf").onsubmit=e=>{e.preventDefault();if($("#pin").value===ACC.pin){parentOK=true;parentsView(main)}else{$("#pinm").textContent="Ce n'est pas le bon code.";buzz()}};return}
+    // 5 erreurs : attente de 30 s, qui double à chaque nouvelle erreur (gardée même si on recharge la page)
+    $("#pinf").onsubmit=async e=>{e.preventDefault();const m=$("#pinm"),wait=Math.ceil(((ACC.pinUntil||0)-Date.now())/1000);
+      if(wait>0){m.textContent=`Trop d'essais. Attends ${wait} secondes.`;buzz();return}
+      if(await pinCheck($("#pin").value)){ACC.pinFail=0;ACC.pinUntil=0;saveAcc();parentOK=true;parentsView(main)}
+      else{ACC.pinFail=(ACC.pinFail||0)+1;if(ACC.pinFail>=5)ACC.pinUntil=Date.now()+30000*2**Math.min(ACC.pinFail-5,6);saveAcc();m.textContent="Ce n'est pas le bon code.";buzz()}};return}
   main.innerHTML=back+`<h1>👨‍👩‍👧 Espace parents</h1><p class="noteline" id="dashst">Je charge les données…</p><div id="dash"></div>`;
   loadKids().then(kids=>{$("#dashst").innerHTML=SB&&USER?`Compte : <b>${esc(USER.email||"")}</b> · données en ligne, mises à jour à chaque utilisation.`:SB?`Pas connecté : seules les données de cet appareil sont montrées. <a href="#enfant" id="dlog">Se connecter</a>`:"Données de cet appareil (la sauvegarde en ligne n'est pas encore branchée : voir le guide dans README.md).";
     if($("#dlog"))$("#dlog").onclick=()=>{ACC.local=false;saveAcc()};
@@ -153,9 +189,13 @@ function parentsView(main){
       (kids.length?dashChild(kids.find(k=>k.id===sel)):"<p>Pas encore d'enfant.</p>")+
       `<div class="ctrl" style="margin-top:22px"><a class="ghost" href="#enfant">👤 Changer d'enfant / ajouter</a><button class="ghost" id="dpin">🔑 Changer le code</button>${SB&&USER?`<button class="ghost" id="dout">Se déconnecter</button>`:""}</div>`;
       P_bind("[data-dk]",b=>b.onclick=()=>{sel=b.dataset.dk;draw()});
-      $("#dpin").onclick=()=>{ACC.pin="";saveAcc();parentsView(main)};
-      if($("#dout"))$("#dout").onclick=async()=>{cloudPush(true);await SB.auth.signOut();USER=null;parentOK=false;ACC.cur=null;saveAcc();go("accueil");render()}};
+      $("#dpin").onclick=()=>{pinChange=true;parentsView(main)}; // l'ancien code reste valable tant que le nouveau n'est pas enregistré
+      if($("#dout"))$("#dout").onclick=async()=>{if(!await cloudPush(true)){toast("La progression n'a pas pu être sauvegardée. Vérifie internet, puis réessaie.");return}
+        await SB.auth.signOut();USER=null;parentOK=false;wipeAccountData();go("accueil");render()}};
     draw()})}
+// à la déconnexion : rien du compte ne reste sur l'appareil (il peut être partagé). Les enfants « sans compte » sont gardés.
+function wipeAccountData(){ACC.children.filter(c=>isCloudId(c.id)).forEach(c=>{try{localStorage.removeItem("lumi-v1-"+c.id)}catch(e){}});
+  ACC.children=ACC.children.filter(c=>!isCloudId(c.id));ACC.cur=null;ACC.pin="";ACC.pinFail=0;ACC.pinUntil=0;ACC.local=false;saveAcc();try{localStorage.removeItem("lumi-v1")}catch(e){}loadS()}
 async function loadKids(){
   if(SB&&USER)try{const {data,error}=await SB.from("children").select("id,name,l1,l2,state").order("name");if(!error)return data.map(c=>({...c,state:c.id===ACC.cur?S:(c.state||{})}))}catch(e){}
   return ACC.children.map(c=>({...c,state:c.id===ACC.cur?S:(readLocal(c.id)||{})}))}
@@ -165,7 +205,12 @@ const mn=sec=>sec>=3600?`${Math.floor(sec/3600)} h ${Math.round(sec%3600/60)} mi
 function dashChild(c){const st=c.state||{},log=st.log||{},today=new Date();
   const dayKey=i=>day(new Date(today-i*864e5)),sum=o=>Object.values(o||{}).reduce((a,b)=>a+b,0);
   const last7=[...Array(7)].map((_,i)=>log[dayKey(i)]).filter(Boolean),t7=last7.reduce((a,d)=>a+sum(d.t),0),used30=[...Array(30)].filter((_,i)=>log[dayKey(i)]&&sum(log[dayKey(i)].t)>0).length;
-  const kinds=[["etude","📖 Étude","#2F7FE0"],["jeu","🎮 Jeu","#DB3F8D"],["examen","✎ Examen","#E3A008"]];
+  const kinds=[["etude","📖 Cours","#2F7FE0"],["jeu","🎮 Jeux","#DB3F8D"],["examen","✎ Examens","#E3A008"],["app","🏠 Menus","#8A94A8"]];
+  // le bilan pour les parents : temps total dans l'appli, dans les cours, dans les jeux
+  const tKind=(days,k)=>days.reduce((a,d)=>a+((d.t||{})[k]||0),0),dur=s=>s>0?mn(s):"0 min";
+  const bilan=(titre,days)=>{const tot=days.reduce((a,d)=>a+sum(d.t),0);
+    return `<div class="bilan"><h3>${titre}</h3>${tot?`<p><b>${esc(c.name)}</b> a passé <b>${dur(tot)}</b> dans l'application : <b>${dur(tKind(days,"etude"))}</b> dans les cours, <b>${dur(tKind(days,"jeu"))}</b> dans les jeux et <b>${dur(tKind(days,"examen"))}</b> aux examens.</p>`:`<p>${esc(c.name)} n'a pas encore utilisé l'application sur cette période.</p>`}
+     <div class="bilan-k"><div><b>${dur(tot)}</b><small>📱 Application</small></div>${kinds.slice(0,3).map(([k,l])=>`<div><b>${dur(tKind(days,k))}</b><small>${l}</small></div>`).join("")}</div></div>`};
   // niveau par matière
   const subj=SUBJECTS.map(s=>{const L=allLessons(s),keys=L.map((_,i)=>s.id+"-"+i),notes=keys.map(k=>st.best&&st.best[k]).filter(x=>x!=null);
     const seen=new Set(Object.values(log).flatMap(d=>d.l||[]).filter(k=>k.startsWith(s.id+"-")));const hard=keys.filter(k=>st.ex&&st.ex[k]&&st.ex[k][3]>=10).length;
@@ -174,6 +219,7 @@ function dashChild(c){const st=c.state||{},log=st.log||{},today=new Date();
   const cal=[...Array(28)].map((_,i)=>{const k=dayKey(27-i),d=log[k],m=d?sum(d.t)/60:0;return `<span class="cal${m>=30?" c3":m>=10?" c2":m>0?" c1":""}" title="${k} · ${m?Math.round(m)+" min":"pas utilisé"}"></span>`}).join("");
   const daysList=Object.keys(log).sort().reverse().filter(k=>sum(log[k].t)>0).slice(0,14);
   return `<div class="dash">
+   <h2 class="sec">⏱️ Le temps de ${esc(c.name)}</h2><div class="bilans">${bilan("Aujourd'hui",[log[dayKey(0)]].filter(Boolean))}${bilan("Ces 7 derniers jours",last7)}</div>
    <div class="kpis"><div><b>⭐ ${st.stars||0}</b><small>étoiles · ${(st.stickers||[]).length} dessins</small></div><div><b>🔥 ${(st.streak||{}).n||0}</b><small>jours de suite</small></div>
     <div><b>${used30}</b><small>jours utilisés sur 30</small></div><div><b>${mn(t7)}</b><small>cette semaine</small></div><div><b>${LANGS[c.l1]||""} + ${LANGS[c.l2]||""}</b><small>langues</small></div></div>
    <h2 class="sec">📅 Les jours d'utilisation (4 semaines)</h2><div class="calg">${cal}</div><p class="noteline">Plus la case est foncée, plus elle a travaillé ce jour-là.</p>

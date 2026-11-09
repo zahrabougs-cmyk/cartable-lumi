@@ -10,9 +10,10 @@ const HUB=[
  ["#francais-debutant","🏠","Mon français pas à pas","Les sons, la maison, les couleurs, gauche et droite…","#2E9E62"],
  ["#monde-eau","🌍","Les mondes 3D","La goutte d'eau, la forêt, la cellule, l'ordinateur.","#4C5BD4"],
  ["#album","📒","Mon album de dessins","Regarde les dessins que tu as gagnés.","#E3A008"]];
-function gamesHub(){return `<a class="back" href="#accueil">← Accueil</a>
-  <div class="htop"><div class="lumi-girl small">${emo("👧🏽","girl")}<div class="bub">${tt(`مرحبا بك في فضاء الألعاب يا ${esc(S.name)}! اختر لعبتك. كل لعبة تربحك نجوما ⭐`,`Bienvenue dans l'espace jeux, ${esc(S.name)} ! Choisis ton jeu. Chaque jeu te fait gagner des étoiles ⭐`)}</div></div></div>
-  <div class="jhub">${HUB.map(([h,e,t,d,c],i)=>`<a class="jtile" href="${h}" style="--c:${c}">${emo(e,"jico")}<b>${tt(HUB_AR[i],t)}</b><small>${d}</small></a>`).join("")}</div>
+function gamesHub(){const st=S.stars||0,lv=Math.floor(st/25)+1,pr=Math.round((st%25)/25*100);
+  return `<a class="back" href="#accueil">← Accueil</a>
+  <section class="arc-hero"><div class="lumi-girl small">${emo("👧🏽","girl")}</div><div class="arc-p"><small>${ts("اللاعب","Joueur")}</small><h1>${esc(S.name)}</h1><div class="arc-lv"><b>${ts("المستوى","Niveau")} ${lv}</b><div class="arc-bar"><span style="width:${pr}%"></span></div></div></div><a class="arc-st" href="#album"><b>⭐ ${st}</b><small>🎨 ${S.stickers.length} / ${STICKERS.length}</small></a></section>
+  <div class="jhub">${HUB.map(([h,e,t,d,c],i)=>`<a class="jtile" href="${h}" style="--c:${c}">${emo(e,"jico")}<b>${tt(HUB_AR[i],t)}</b><small>${d}</small><span class="jplay">▶</span></a>`).join("")}</div>
   <h2 class="sec">🔎 ${tt("ابحث وجد","Cherche et trouve")}</h2>${sceneCards(SCENES.map(s=>s.id))}
   <h2 class="sec">🔤 ${tt("ألعاب الكلمات","Jeux de mots")}</h2><div class="wcards">${MGAMES.map(g=>`<a class="wcardx" href="#mots" style="--c:#DB3F8D">${emo(g[1],"sico")}<b>${g[2]}</b><small>${g[3]}</small></a>`).join("")}</div>
   <h2 class="sec">🎮 ${tt("ألعاب ثلاثية الأبعاد","Jeux en 3D")}</h2>${worldCards(Object.keys(WORLDS))}`}

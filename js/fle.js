@@ -36,21 +36,31 @@ const big=e=>emo(e,"emo");
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ًͯ-ْٰـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[^a-z0-9ء-ي ]/g," ").replace(/\b(le|la|les|l|un|une|des|c est|cest)\b/g," ").replace(/\s+/g," ").trim();
 function lev(a,b){const m=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const t=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return m[b.length]}
-function nearly(target,heard){const t=norm(target),h=norm(heard);if(!t||!h)return false;if(h.includes(t))return true;const ws=h.split(" ");const n=t.split(" ").length;let best=0;
-  for(let i=0;i<ws.length;i++){const seg=ws.slice(i,i+n).join(" ");best=Math.max(best,1-lev(t,seg)/Math.max(t.length,seg.length))}return best>=.6}
-function listen(lang,onRes,onErr){if(!SR){onErr("none");return null}stopSpeak();const r=new SR();r.lang=VL[lang]||"fr-FR";r.interimResults=false;r.maxAlternatives=3;
-  r.onresult=e=>{const alts=[...e.results[0]].map(x=>x.transcript);onRes(alts)};r.onerror=e=>onErr(e.error);try{r.start()}catch(e){onErr("start")}return r}
-// bloc « Répète » : micro + bouton j'ai répété
+// français : deux mots qui se prononcent pareil comptent pour un seul (vert / verre, mer / mère), car le micro choisit l'orthographe tout seul
+const phonFr=s=>s.split(" ").map(w=>{w=w.replace(/ph/g,"f").replace(/qu/g,"k").replace(/eau|au/g,"o").replace(/ai|ei/g,"e").replace(/(.)\1/g,"$1");return w.length>3?w.replace(/e?s?$/,"").replace(/[tdpxz]$/,""):w}).join(" ");
+// nombre de fautes permises selon la longueur : aucune sur un mot court (chat ≠ chant)
+const fautesOK=n=>n<=4?0:n<=7?1:n<=11?2:Math.floor(n*.2);
+// strict : le mot doit être exactement le bon (sert pour les 2e et 3e propositions du micro, moins sûres)
+function nearly(target,heard,lang,strict){const ph=x=>lang==="fr"?phonFr(norm(x)):norm(x);const t=ph(target),h=ph(heard);if(!t||!h)return false;const ws=h.split(" "),n=t.split(" ").length,max=strict?0:fautesOK(t.replace(/ /g,"").length);
+  for(let i=0;i+n<=ws.length;i++)if(lev(t,ws.slice(i,i+n).join(" "))<=max)return true;return false}
+function listen(lang,onRes,onErr,onEnd){if(!SR){onErr("none");return null}stopSpeak();const r=new SR();r.lang=VL[lang]||"fr-FR";r.interimResults=false;r.maxAlternatives=3;
+  r.onresult=e=>{const alts=[...e.results[0]].map(x=>x.transcript);onRes(alts)};r.onerror=e=>onErr(e.error);if(onEnd)r.onend=onEnd;try{r.start()}catch(e){onErr("start")}return r}
+// bloc « Répète » : micro, et bouton « J'ai répété » seulement si le micro ne peut pas écouter
+// le mot ne se valide qu'UNE fois : une seule étoile, même si on clique plusieurs fois
 function repeatBlock(el,target,lang,done){
   el.innerHTML=`<div class="rep"><button class="mic" id="micb" aria-label="Parler">🎤</button><div class="rep-t"><b>Appuie sur le micro et dis :</b><br><span class="say-w">« ${esc(target)} »</span><div class="noteline" id="heard"></div><div class="tip" id="tip" hidden></div></div></div>
-   <div class="ctrl"><button class="ghost" id="again">🔊 Réécouter</button><button class="ghost" id="selfok">✔ J'ai répété</button></div>`;
-  let tries=0;
+   <div class="ctrl"><button class="ghost" id="again">🔊 Réécouter</button><button class="ghost" id="selfok"${SR?" hidden":""}>✔ J'ai répété</button></div>`;
+  let tries=0,fini=false,rec=null;const self=$("#selfok",el),mic=$("#micb",el),heard=$("#heard",el);
+  const finish=()=>{if(fini)return;fini=true;self.disabled=mic.disabled=true;if(rec)try{rec.abort()}catch(e){}done(true,tries)};
+  const showSelf=t=>{self.hidden=false;if(t)self.textContent=t};
   $("#again",el).onclick=()=>sayOne(target,lang);
-  $("#selfok",el).onclick=()=>done(true,tries);
-  $("#micb",el).onclick=()=>{const b=$("#micb",el);b.classList.add("on");$("#heard",el).textContent="Je t'écoute…";
-    listen(lang,alts=>{b.classList.remove("on");tries++;const ok=alts.some(a=>nearly(target,a));$("#heard",el).textContent="J'ai entendu : « "+alts[0]+" »";
-      if(ok){done(true,tries)}else{buzz();$("#heard",el).textContent+=" · Presque ! Encore une fois.";sayOne(target,lang);aiTip(target,alts[0],$("#tip",el));if(tries>=2)$("#selfok",el).textContent="Continuer ▶"}},
-     err=>{b.classList.remove("on");$("#heard",el).textContent=err==="none"?"Le micro ne marche pas sur ce navigateur : dis le mot à voix haute, puis appuie sur « J'ai répété ».":err==="not-allowed"?"Le micro n'est pas autorisé ici. Dis le mot à voix haute, puis appuie sur « J'ai répété ».":"Je n'ai rien entendu. Réessaie !"})};
+  self.onclick=finish;
+  mic.onclick=()=>{if(fini||mic.classList.contains("on"))return;mic.classList.add("on");heard.textContent="Je t'écoute…";
+    rec=listen(lang,alts=>{mic.classList.remove("on");if(fini||!el.isConnected)return;tries++;const ok=alts.some((a,i)=>nearly(target,a,lang,i>0));heard.textContent="J'ai entendu : « "+alts[0]+" »";
+      if(ok){finish()}else{buzz();heard.textContent+=" · Presque ! Encore une fois.";sayOne(target,lang);aiTip(target,alts[0],$("#tip",el));if(tries>=2)showSelf("Continuer ▶")}},
+     err=>{mic.classList.remove("on");if(fini||!el.isConnected)return;if(err==="aborted")return;if(err==="no-speech"){tries++;heard.textContent="Je n'ai rien entendu. Réessaie !";if(tries>=2)showSelf("Continuer ▶");return}
+       showSelf();heard.textContent=err==="none"?"Le micro ne marche pas sur ce navigateur : dis le mot à voix haute, puis appuie sur « J'ai répété ».":err==="not-allowed"?"Le micro n'est pas autorisé ici. Dis le mot à voix haute, puis appuie sur « J'ai répété ».":"Le micro ne marche pas pour le moment. Dis le mot à voix haute, puis appuie sur « J'ai répété »."},
+     ()=>{mic.classList.remove("on");if(!fini&&el.isConnected&&heard.textContent==="Je t'écoute…")heard.textContent="Je n'ai rien entendu. Réessaie !"})};
 }
 
 // ----- accueil prénom -----
@@ -63,7 +73,7 @@ function mountOnboard(){
 }
 
 // ----- série de jours -----
-function day(d=new Date()){return d.toISOString().slice(0,10)}
+function day(d=new Date()){return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)} // date locale : la journée change à minuit à la maison
 function bumpStreak(){const t=day(),y=day(new Date(Date.now()-864e5));if(S.streak.last===t)return;S.streak.n=S.streak.last===y?S.streak.n+1:1;S.streak.last=t;save()}
 
 // ----- chemin des unités -----
@@ -264,7 +274,7 @@ function mountMap(P,s,L){
 const MOVES=["Lève les bras vers le ciel, très haut !","Saute dix fois sur place.","Bois un verre d'eau.","Marche un peu dans la maison.","Respire cinq fois, très fort.","Tourne les épaules doucement.","Touche tes pieds, puis ta tête."];
 let pomo={mode:"work",left:1200,paused:false};
 function pomoInit(){setInterval(pomoTick,1000);pomoReset();$("#pomo").onclick=()=>{pomo.paused=!pomo.paused;pomoDraw()}}
-function pomoReset(){pomo={mode:"work",left:1200,paused:false};$("#pomo").hidden=!S.pomo;pomoDraw()}
+function pomoReset(){pomo={mode:"work",left:1200,paused:false};$("#pomo").hidden=true;pomoDraw()} // le chrono ne s'affiche plus : il compte en arrière-plan
 function pomoDraw(){const m=Math.floor(pomo.left/60),s=pomo.left%60;$("#pomo").innerHTML=`${pomo.paused?"⏸":"⏱"} <span>${m}:${String(s).padStart(2,"0")}</span>`;$("#pomo").setAttribute("aria-label",`Temps de travail restant ${m} minutes. Appuie pour mettre en pause.`)}
 function pomoTick(){if(!S.pomo||!S.name||pomo.paused||document.visibilityState!=="visible")return;
   if(pomo.mode==="work"){pomo.left--;pomoDraw();if(pomo.left<=0)pomoBreak()}
@@ -303,15 +313,17 @@ async function ollamaChat(messages,onTok){
   return all;
 }
 async function ollamaModels(){const r=await fetch(S.ollama+"/api/tags");if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();return (j.models||[]).map(m=>m.name)}
-async function aiInit(){
+// auto = au démarrage : on ne cherche Ollama que si la famille l'a déjà branché (sinon Chrome demanderait à chaque visiteur l'accès au réseau local)
+async function aiInit(auto){
   $("#aib").onclick=()=>openAI("lesson");
+  if(auto&&!S.model)return;
   try{const ms=await ollamaModels();if(ms.length){if(!S.model||!ms.includes(S.model)){S.model=ms[0];save()}aiReady=true}}catch(e){aiReady=false}
 }
 async function testOllama(){const r=$("#olr");r.textContent="Je cherche Ollama…";
   try{const ms=await ollamaModels();if(!ms.length){r.textContent="Ollama marche, mais aucun modèle n'est installé. Tape dans un terminal : ollama pull llama3.2";return}
     if(!S.model||!ms.includes(S.model))S.model=ms[0];save();aiReady=true;
     $("#olm").innerHTML=ms.map(m=>`<button data-set="model" data-v="${esc(m)}" aria-pressed="${m===S.model}">${esc(m)}</button>`).join("");r.textContent="Connecté ✔ Choisis le modèle.";}
-  catch(e){aiReady=false;r.textContent="Je ne trouve pas Ollama. Vérifie qu'il tourne, et lance-le avec OLLAMA_ORIGINS=* (voir le guide). Dans la page Claude en ligne, le prof IA ne peut pas marcher : utilise le fichier téléchargé.";}}
+  catch(e){aiReady=false;r.textContent="Je ne trouve pas Ollama. Vérifie qu'il tourne, et que OLLAMA_ORIGINS contient l'adresse de ce site (voir le guide). Dans la page Claude en ligne, le prof IA ne peut pas marcher : utilise le fichier téléchargé.";}}
 function speakable(t){return t.replace(/\([^)]*[؀-ۿ][^)]*\)/g,"").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu,"").replace(/[*_#>`]/g,"")}
 function aiSpeak(t,el){const ar=(t.match(/[؀-ۿ]/g)||[]).length,la=(t.match(/[a-zA-Zàâéèêîôûç]/g)||[]).length;const lang=ar>la?"ar":"fr";el.innerHTML=readable(lang==="fr"?speakable(t):t,lang)+(lang==="fr"&&ar?`<div class="ar noteline">${esc((t.match(/\([^)]*[؀-ۿ][^)]*\)/g)||[]).join(" "))}</div>`:"");readEl(el,lang)}
 function openAI(mode){
@@ -327,7 +339,7 @@ function openAI(mode){
     if(text){add("me",text);aiMsgs.push({role:"user",content:text})}
     aiBusy=true;const b=add("ai","…");
     try{const out=await ollamaChat([{role:"system",content:aiSystem()},...aiMsgs],t=>{b.textContent=t;$("#alog").scrollTop=1e9});aiMsgs.push({role:"assistant",content:out});aiSpeak(out,b)}
-    catch(e){b.textContent="Je n'arrive pas à parler avec Ollama. Vérifie qu'il tourne avec OLLAMA_ORIGINS=*."}
+    catch(e){b.textContent="Je n'arrive pas à parler avec Ollama. Vérifie qu'il tourne (voir le guide : OLLAMA_ORIGINS)."}
     aiBusy=false};
   d.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>send(b.dataset.q));
   $("#aif").onsubmit=e=>{e.preventDefault();const t=$("#ain").value.trim();if(t){$("#ain").value="";send(t)}};

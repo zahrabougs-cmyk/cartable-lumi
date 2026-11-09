@@ -8,10 +8,10 @@ function loadS(){S=JSON.parse(JSON.stringify(S0));try{Object.assign(S,JSON.parse
 loadS();
 function save(){S._t=Date.now();try{localStorage.setItem(lsKey(),JSON.stringify(S))}catch(e){}cloudPush()}
 const $=(s,r=document)=>r.querySelector(s);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const CREDITS=new Map();
 function figHTML(im){CREDITS.set(im.f,im);const src="https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(im.f.replace(/ /g,"_"))+"?width=640";const pg="https://commons.wikimedia.org/wiki/File:"+encodeURIComponent(im.f.replace(/ /g,"_"));
-  return `<figure class="ph"><img src="${src}" alt="${esc(im.cap)}" loading="lazy" onerror="this.closest('figure').classList.add('noimg')"><a class="ph-link" href="${pg}" target="_blank" rel="noopener">📷 Voir la photo</a><figcaption><b>${esc(im.cap)}</b>${im.capAr?`<span class="ar" dir="rtl">${esc(im.capAr)}</span>`:""}<small>${esc(im.by||"Wikimedia Commons")} · ${esc(im.lic)}</small></figcaption></figure>`}
+  return `<figure class="ph"><img src="${src}" alt="${esc(im.cap)}" loading="lazy"><a class="ph-link" href="${pg}" target="_blank" rel="noopener">📷 Voir la photo</a><figcaption><b>${esc(im.cap)}</b>${im.capAr?`<span class="ar" dir="rtl">${esc(im.capAr)}</span>`:""}<small>${esc(im.by||"Wikimedia Commons")} · ${esc(im.lic)}</small></figcaption></figure>`}
 function arLine(t,id){return S.trAr&&t?`<div class="tr-ar" dir="rtl"><button class="say" data-ar="${id}" aria-label="Écouter en arabe">🔊</button><span class="tx" id="${id}">${readable(t,"ar")}</span></div>`:""}
 function frLine(t,id){return t?`<div class="tr-ar tr-fr" dir="ltr"><button class="say" data-fr="${id}" aria-label="Écouter en français">🔊</button><span class="tx" id="${id}">${readable(t,"fr")}</span></div>`:""}
 function bindAr(root){root.querySelectorAll("[data-ar]").forEach(b=>b.onclick=()=>readEl($("#"+b.dataset.ar),"ar"));root.querySelectorAll("[data-fr]").forEach(b=>b.onclick=()=>readEl($("#"+b.dataset.fr),"fr"))}
@@ -369,18 +369,19 @@ function drawSettings(){
    <div class="row"><span class="lb">Traduction en arabe (sciences)</span>${seg("trAr",[[true,"Afficher"],[false,"Cacher"]])}</div>
    <div class="row"><span class="lb">La vidéo lit aussi en arabe</span>${seg("readAr",[[true,"Oui"],[false,"Non"]])}</div>
    <div class="row"><span class="lb">Questions par examen</span>${seg("examMax",[[6,"6 (court)"],[0,"Toutes"]])}</div>
-   <div class="row"><span class="lb">Rythme 20 min travail / 5 min pause</span>${seg("pomo",[[true,"Oui"],[false,"Non"]])}</div>
+   <div class="row"><span class="lb">Pause mouvement toutes les 20 min</span>${seg("pomo",[[true,"Oui"],[false,"Non"]])}</div>
    <div class="row"><span class="lb">Prof IA (Ollama)</span>
      <input type="text" id="olu" value="${esc(S.ollama)}" aria-label="Adresse Ollama">
      <div class="seg" id="olm">${S.model?`<button aria-pressed="true">${esc(S.model)}</button>`:'<small class="noteline" style="margin:0">Aucun modèle choisi</small>'}</div>
      <button class="ghost" id="olt">Tester et choisir le modèle</button><small class="noteline" style="margin:0" id="olr">Ollama doit tourner sur l'ordinateur. Voir le guide dans le fichier.</small></div>
-   <div class="row"><span class="lb">Les voix (arabe, français)</span><a class="ghost" href="#voix" onclick="closeSettings()">🔊 Vérifier et réparer les voix</a></div>
+   <div class="row"><span class="lb">Les voix (arabe, français)</span><a class="ghost" href="#voix" id="voixl">🔊 Vérifier et réparer les voix</a></div>
    <div class="row"><span class="lb">Vitesse de la voix</span>${seg("rate",[["lente","Lente"],["normale","Normale"],["rapide","Rapide"]])}</div>
    <div class="row"><span class="lb">Règle de lecture</span>${seg("ruler",[[true,"Oui"],[false,"Non"]])}<small class="noteline" style="margin:0">Une bande jaune suit ta souris ou ton doigt pour garder la ligne.</small></div>
    ${offlineBlock()}`;
   $("#dclose").onclick=closeSettings;offlineBind();
   $("#dkid").onclick=$("#dpar").onclick=()=>closeSettings();
-  $("#nm").oninput=e=>{S.name=e.target.value.slice(0,30).trim()||S.name;const c=curChild();if(c){c.name=S.name;saveAcc()}save()};
+  $("#nm").oninput=e=>{S.name=cleanName(e.target.value)||S.name;const c=curChild();if(c){c.name=S.name;saveAcc()}save()};
+  $("#voixl").onclick=()=>closeSettings();
   $("#olu").onchange=e=>{S.ollama=e.target.value.trim().replace(/\/$/,"");save()};
   $("#olt").onclick=testOllama;
 }
@@ -395,5 +396,5 @@ document.addEventListener("pointermove",e=>{if(S.ruler){$("#ruler").style.top=(e
 function start(){
   $("#setb").onclick=openSettings;$("#veil").onclick=()=>{if(!$("#ai").hidden)closeAI();else closeSettings()};
   $("#stopb").onclick=()=>{stopSpeak();stopSong();document.querySelectorAll("#sp").forEach(b=>b.textContent="♪ Chanter")};
-  appInit();accInit();if(curChild()){const c=curChild();S.l1=S.l1||c.l1;S.l2=S.l2||c.l2;langFlags()}migrate3();mergeGen();starChip();applySettings();bumpStreak();pomoInit();aiInit();route();
+  appInit();accInit();if(curChild()){const c=curChild();S.l1=S.l1||c.l1;S.l2=S.l2||c.l2;langFlags()}migrate3();mergeGen();starChip();applySettings();bumpStreak();pomoInit();aiInit(true);route();
 }
