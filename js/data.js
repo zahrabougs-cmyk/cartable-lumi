@@ -3908,7 +3908,7 @@ const LESSONS = {
    "J'observe, je me pose une question,",
    "Je propose une hypothèse, c'est ma réflexion,",
    "Je fais une expérience, je regarde bien,",
-   "Et je conclus : je suis une scientifique demain !"
+   "Et je conclus : je serai une scientifique demain !"
   ],
   "games": [
    {

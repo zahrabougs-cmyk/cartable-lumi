@@ -76,7 +76,7 @@ K("francais-2",{p:"Manuel p. 16 · Texte 2",v:[
  ["Le pêcheur et le génie","C'est un conte des Mille et Une Nuits. Un pauvre pêcheur jette son filet dans la mer.","حكاية من ألف ليلة وليلة. صياد فقير يرمي شبكته في البحر.","🎣 🌊"],
  ["Le vase de cuivre","Dans son filet, il trouve un vase fermé. Il l'ouvre : une fumée sort et devient un génie immense.","يجد في شبكته جرة نحاسية مغلقة. يفتحها فيخرج دخان يصبح جنيا ضخما.","🏺 ➜ 💨 ➜ 🧞"],
  ["La menace","Le génie est en colère. Il veut tuer le pêcheur, celui qui l'a libéré !","الجني غاضب ويريد قتل الصياد الذي حرره!","🧞 😡 ➜ 🎣 😨"],
- ["La ruse","Le pêcheur est malin. Il dit : « Je ne crois pas qu'un géant comme toi tient dans ce petit vase ! » Le génie, vexé, rentre dans le vase pour le prouver.","الصياد ذكي. يقول: لا أصدق أنك تدخل في هذه الجرة الصغيرة! فيدخل الجني ليثبت ذلك.","🧠 ➜ 🧞 ➜ 🏺"],
+ ["La ruse","Le pêcheur est malin. Il dit : « Je ne crois pas qu'un géant comme toi tienne dans ce petit vase ! » Le génie, vexé, rentre dans le vase pour le prouver.","الصياد ذكي. يقول: لا أصدق أنك تدخل في هذه الجرة الصغيرة! فيدخل الجني ليثبت ذلك.","🧠 ➜ 🧞 ➜ 🏺"],
  ["La fin","Vite, le pêcheur referme le vase. L'intelligence est plus forte que la force.","يسرع الصياد ويغلق الجرة. الذكاء أقوى من القوة.","🧠 > 💪"]],
  e:["Le conte vient des Mille et Une Nuits.","Le génie sort d'un vase de cuivre et menace le pêcheur.","Le pêcheur utilise une ruse : il fait rentrer le génie dans le vase.","Morale : l'intelligence est plus forte que la force."],
  ea:["الحكاية من ألف ليلة وليلة.","الجني يخرج من جرة ويهدد الصياد.","الصياد يستعمل الحيلة.","العبرة: الذكاء أقوى من القوة."],
@@ -87,7 +87,7 @@ K("francais-2",{p:"Manuel p. 16 · Texte 2",v:[
   {t:"Je comprends",ar:"أفهم القصة.",it:[
    {k:"write",q:"Que trouve le pêcheur dans son filet ?",keys:[["vase","jarre"]],model:"Le pêcheur trouve un vase de cuivre fermé.",why:"Le vase est l'objet magique du conte."},
    {k:"write",q:"Pourquoi le pêcheur a-t-il peur ?",keys:[["genie"],["tuer","menace","colere"]],model:"Il a peur parce que le génie veut le tuer.",why:"C'est l'élément perturbateur : le génie menace le pêcheur."},
-   {k:"mcq",q:"Quelle phrase montre la ruse du pêcheur ?",ch:["Je ne crois pas que tu tiens dans ce petit vase !","Merci, génie !","Je rentre chez moi."],why:"Il fait semblant de ne pas croire le génie, pour qu'il rentre dans le vase."},
+   {k:"mcq",q:"Quelle phrase montre la ruse du pêcheur ?",ch:["Je ne crois pas que tu tiennes dans ce petit vase !","Merci, génie !","Je rentre chez moi."],why:"Il fait semblant de ne pas croire le génie, pour qu'il rentre dans le vase."},
    {k:"sort",q:"Range : merveilleux ou réel ?",box:["Merveilleux ✨","Réel 🌍"],items:[["un génie sort d'une fumée",0],["un pêcheur jette son filet",1],["un génie immense dans un petit vase",0],["la mer",1]],why:"Le merveilleux, c'est ce qui est impossible dans la vraie vie.",pts:2}]}]}});
 
 K("francais-3",{p:"Manuel p. 20 · Texte 3",v:[
@@ -115,7 +115,7 @@ K("francais-4",{p:"Manuel p. 24 · Texte 4",v:[
  ["La fée marraine","Sa marraine est une fée. Avec sa baguette, elle change une citrouille en carrosse, des souris en chevaux, et les vieux habits en belle robe.","عرابتها جنية. بعصاها تحول اليقطينة إلى عربة، والفئران إلى أحصنة.",[["la citrouille","🎃 ➜ carrosse"],["les souris","🐭 ➜ chevaux"],["les habits","👗 ➜ robe"]]],
  ["Minuit !","Attention : à minuit, la magie s'arrête. Au deuxième soir, Cendrillon part en courant et perd une pantoufle de verre.","في منتصف الليل يتوقف السحر. تهرب سندريلا وتفقد حذاءها الزجاجي.","🕛 👠"],
  ["La fin heureuse","Le prince essaie la pantoufle à toutes les filles. Elle va parfaitement à Cendrillon. Ils se marient. Cendrillon pardonne à ses sœurs.","الأمير يجرب الحذاء على كل الفتيات، فيناسب سندريلا. يتزوجان، وتسامح أختيها.","👠 ✔ 💍"]],
- e:["Cendrillon est le héros ; la belle-mère et les sœurs sont les opposants.","La fée marraine est l'adjuvant : elle utilise la magie.","La magie s'arrête à minuit.","Cendrillon est récompensée pour sa bonté."],
+ e:["Cendrillon est l'héroïne ; la belle-mère et les sœurs sont les opposants.","La fée marraine est l'adjuvant : elle utilise la magie.","La magie s'arrête à minuit.","Cendrillon est récompensée pour sa bonté."],
  ea:["سندريلا هي البطلة، وزوجة الأب والأختان هن المعارضات.","الجنية هي المساعدة.","السحر يتوقف في منتصف الليل.","سندريلا تكافأ على طيبتها."],
  w:[["la marraine","العرابة","🧚"],["la baguette","العصا السحرية","🪄"],["le carrosse","العربة","🎃"],["la pantoufle","الخف","👠"],["le bal","الحفلة الراقصة","💃"],["minuit","منتصف الليل","🕛"]],
  s:["Cendrillon travaille, ses sœurs vont au bal,","La fée lève sa baguette, quel spectacle royal !","Mais à minuit, vite, il faut partir,","La pantoufle de verre la fera revenir !"],

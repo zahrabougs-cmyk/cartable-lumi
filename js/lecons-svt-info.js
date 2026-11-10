@@ -40,7 +40,7 @@ K("svt-4",{worlds:["foret"],v:[
  x:[["Dans « herbe → lapin », la flèche veut dire…",["est mangé par","mange","regarde"]],["Les champignons qui recyclent sont…",["des décomposeurs","des carnivores","des producteurs"]],["Plusieurs chaînes reliées forment…",["un réseau alimentaire","une forêt","un cycle de l'eau"]],["Une chaîne alimentaire commence souvent par une plante.",true],["La pollution aide l'équilibre naturel.",false],["Si les lapins disparaissent, les renards…",["ont moins à manger","mangent plus","ne changent pas"]]]});
 
 K("svt-5",{v:[
- ["Classer les êtres vivants","Pour classer, on regarde les caractères communs : ce que les êtres vivants ont pareil.","للتصنيف ننظر إلى الصفات المشتركة بين الكائنات الحية.","🔍"],
+ ["Classer les êtres vivants","Pour classer, on regarde les caractères communs : ce que les êtres vivants ont en commun.","للتصنيف ننظر إلى الصفات المشتركة بين الكائنات الحية.","🔍"],
  ["Les vertébrés","Les vertébrés ont un squelette avec une colonne vertébrale.","الفقاريات لها هيكل عظمي بعمود فقري.",[["mammifères","poils 🐄"],["oiseaux","plumes 🐦"],["poissons","écailles 🐟"],["reptiles","écailles sèches 🦎"],["amphibiens","peau nue 🐸"]]],
  ["Les invertébrés","Les invertébrés n'ont pas de colonne vertébrale : les insectes, les escargots, les vers.","اللافقاريات ليس لها عمود فقري: الحشرات والحلزون والديدان.","🐜 🐌 🪱"],
  ["Les plantes","On classe aussi les plantes : avec fleurs ou sans fleurs.","نصنف النباتات أيضا: بأزهار أو بدون أزهار.",[["avec fleurs","🌻"],["sans fleurs","🌿 fougère, mousse"]]],
@@ -67,7 +67,7 @@ K("svt-6",{v:[
 
 K("svt-7",{v:[
  ["L'érosion","La pluie, le vent et les rivières cassent les roches en petits morceaux. C'est l'érosion.","المطر والرياح والأنهار تكسر الصخور إلى قطع صغيرة. هذا هو التعرية.","🌧️ 💨 🪨"],
- ["Le transport","L'eau et le vent emportent les sables et les graviers loin.","الماء والرياح تنقل الرمال والحصى بعيدا.","🌊 ➡️"],
+ ["Le transport","L'eau et le vent emportent loin les sables et les graviers.","الماء والرياح تنقل الرمال والحصى بعيدا.","🌊 ➡️"],
  ["La sédimentation","Les morceaux se déposent au fond de la mer ou du lac, en couches. Ce sont les sédiments.","القطع تترسب في قاع البحر أو البحيرة على شكل طبقات. هذه هي الرواسب.","〰️〰️〰️"],
  ["La roche sédimentaire","Avec le temps, les sédiments deviennent durs. Ils forment une roche sédimentaire, comme le grès ou le calcaire.","مع الزمن تتصلب الرواسب وتكون صخرة رسوبية مثل الحث أو الكلس.",["Érosion","Transport","Sédimentation","Roche sédimentaire"]],
  ["Les couches","Les couches les plus anciennes sont en bas. Les plus récentes sont en haut.","الطبقات الأقدم في الأسفل والأحدث في الأعلى.","⬆️ récent · ⬇️ ancien"]],
@@ -92,7 +92,7 @@ K("svt-8",{v:[
  x:[["L'âge de la Terre est environ…",["4,5 milliards d'années","2026 ans","1 million d'années"]],["La couche du dessus est…",["plus récente","plus ancienne","du même âge"]],["Les dinosaures ont vécu à l'ère…",["secondaire","quaternaire","primaire"]],["Les fossiles aident à dater les roches.",true],["L'ère quaternaire est la plus ancienne.",false],["L'ère où nous vivons :",["quaternaire","primaire","secondaire"]]]});
 
 K("svt-9",{worlds:["eau"],v:[
- ["L'eau sur Terre","La Terre est couverte d'eau, mais presque toute est salée. Très peu d'eau est douce et utilisable.","الأرض مغطاة بالماء، لكن أغلبه مالح. القليل جدا عذب وصالح للاستعمال.",[["eau salée","97 %"],["eau douce","3 %"]]],
+ ["L'eau sur Terre","La Terre est couverte d'eau, mais presque toute cette eau est salée. Très peu d'eau est douce et utilisable.","الأرض مغطاة بالماء، لكن أغلبه مالح. القليل جدا عذب وصالح للاستعمال.",[["eau salée","97 %"],["eau douce","3 %"]]],
  ["Les ressources","L'eau douce vient des rivières, des lacs, des barrages et des nappes souterraines.","الماء العذب يأتي من الأنهار والبحيرات والسدود والفرشات المائية.","🏞️ 💧 ⛲"],
  ["La nappe phréatique","La pluie s'infiltre dans le sol et forme une réserve sous la terre : la nappe phréatique.","المطر يتسرب في التربة ويكون مخزونا تحت الأرض: الفرشة المائية.",["Pluie","Infiltration","Nappe phréatique","Puits"]],
  ["Au Maroc","Le Maroc a peu de pluie. Il a construit beaucoup de barrages pour garder l'eau.","المغرب قليل الأمطار، وبنى سدودا كثيرة لتخزين الماء.","🇲🇦 barrages"],

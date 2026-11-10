@@ -335,7 +335,7 @@ function openAI(mode){
   $("#aix").onclick=closeAI;
   const add=(who,t)=>{const b=document.createElement("div");b.className="bubble "+(who==="me"?"a":"q");b.textContent=t;$("#alog").appendChild(b);$("#alog").scrollTop=1e9;return b};
   const send=async text=>{if(aiBusy)return;
-    if(!aiReady){await aiInit();if(!aiReady){add("ai","Je ne suis pas connecté. Demande à un grand d'allumer Ollama sur l'ordinateur (Réglages → Prof IA).");return}}
+    if(!aiReady){await aiInit();if(!aiReady){add("ai","Je ne suis pas connectée. Demande à un grand d'allumer Ollama sur l'ordinateur (Réglages → Prof IA).");return}}
     if(text){add("me",text);aiMsgs.push({role:"user",content:text})}
     aiBusy=true;const b=add("ai","…");
     try{const out=await ollamaChat([{role:"system",content:aiSystem()},...aiMsgs],t=>{b.textContent=t;$("#alog").scrollTop=1e9});aiMsgs.push({role:"assistant",content:out});aiSpeak(out,b)}

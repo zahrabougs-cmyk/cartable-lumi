@@ -60,7 +60,7 @@ K("physique-5",{v:[
  x:[["On mesure la pression d'un gaz avec…",["un manomètre","une balance","une règle"]],["Quand on comprime un gaz, sa pression…",["augmente","diminue","ne change pas"]],["La pression atmosphérique vaut environ…",["1 bar","100 bars","0 bar"]],["Le baromètre mesure la pression atmosphérique.",true],["L'air ne pousse sur rien.",false],["L'unité de pression est…",["le pascal","le litre","le gramme"]]]});
 
 K("physique-6",{v:[
- ["Des petits grains","La matière est faite de toutes petites particules, invisibles à l'œil : les molécules.","المادة مكونة من دقائق صغيرة جدا لا ترى بالعين: الجزيئات.","⚫⚫⚫"],
+ ["De petits grains","La matière est faite de toutes petites particules, invisibles à l'œil : les molécules.","المادة مكونة من دقائق صغيرة جدا لا ترى بالعين: الجزيئات.","⚫⚫⚫"],
  ["Dans le solide","Dans un solide, les particules sont serrées, rangées et presque immobiles.","في الصلب، الدقائق متراصة ومرتبة وشبه ساكنة.","⚫⚫⚫ ⚫⚫⚫"],
  ["Dans le liquide","Dans un liquide, les particules sont serrées, mais en désordre. Elles glissent.","في السائل، الدقائق متراصة لكنها غير مرتبة وتنزلق.","⚫⚫ ⚫⚫⚫"],
  ["Dans le gaz","Dans un gaz, les particules sont loin les unes des autres. Elles bougent très vite.","في الغاز، الدقائق متباعدة وتتحرك بسرعة كبيرة.","⚫   ⚫    ⚫"],
